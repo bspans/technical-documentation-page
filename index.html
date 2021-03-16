@@ -1,0 +1,135 @@
+<!--
+<script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+-->
+<div class="main-body">
+    <nav class=navi id="navbar">
+      <header>Snapcast multiroom audio system</header>
+        <a href="#Snapcast" class="nav-link">Snapcast</a>
+        <a href="#How_does_it_work" class="nav-link">How does it work</a>
+        <a href="#Configuration" class="nav-link">Configuration</a>
+        <a href="#Server" class="nav-link">Server</a>
+        <a href="#Client" class="nav-link">Client</a>
+        <a href="#Test" class="nav-link">Test</a>
+    </nav>
+    
+    <main id="main-doc">
+      <section class="main-section" id="Snapcast">
+        <header>Snapcast</header>
+          <p>Snapcast is a multiroom client-server audio player, where all clients are time synchronized with the server to play perfectly synced audio. It's not a standalone player, but an extension that turns your existing audio player into a Sonos-like multiroom solution.
+    Audio is captured by the server and routed to the connected clients. Several players can feed audio to the server in parallel and clients can be grouped to play the same audio stream.
+            One of the most generic ways to use Snapcast is in conjunction with the music player daemon </p>
+        
+      </section>
+      <section class="main-section" id="How_does_it_work"> 
+        <header>How does it work</header>
+        <p>The Snapserver reads PCM chunks from configurable stream sources:</p>
+        <p>Named </p>
+        
+        <ul>
+        <li>pipe, e.g. /tmp/snapfifo</li>
+        <li>ALSA to capture line-in, microphone</li>
+        <li>alsa-loop (to capture audio from other players)</li>
+        <li>TCP</li>
+        <li>stdout of a process</li>
+        </ul>
+        <p>Many more</p>
+    <p>The chunks are encoded and tagged with the local time. Supported codecs are:</p>
+        <p>
+    <ul>
+      <li>PCM lossless uncompressed</li>
+    <li>FLAC lossless compressed [default]</li>
+    <li>Vorbis lossy compression</li>
+    <li>Opus lossy low-latency compression</li>
+      </ul>
+        </p>
+    The encoded chunks are sent via a TCP connection to the Snapclients. Each client does continuous time synchronization with the server, so that the client is always aware of the local server time. Every received chunk is first decoded and added to the client's chunk-buffer. Knowing the server's time, the chunk is played out using a system dependend low level audio API (e.g. ALSA) at the appropriate time. Time deviations are corrected by playing faster/slower, which is done by removing/duplicating single samples (a sample at 48kHz has a duration of ~0.02ms).
+    
+    Typically the deviation is below 0.2ms.
+    
+          For more information on the binary protocol, please see the documentation.</p>
+    
+      </section>
+        <section class="main-section" id="Configuration"><header>Configuration</header>
+          <p>
+            After installation, Snapserver and Snapclient are started with the command line arguments that are configured in <code>/etc/default/snapserver</code> and <code>/etc/default/snapclient</code>. Allowed options are listed in the man pages (<code>man snapserver</code>, <code>man snapclient</code>) or by invoking the snapserver or snapclient with the -h option.</p></section>
+          
+    <section class="main-section" id="Server"><header>Server</header>
+                  The server configuration is done in <code>/etc/snapserver.conf</code>. Different audio sources can by configured in the <code>[stream]</code> section with a list of source options, e.g.:
+    
+    <code>[stream]
+    source = pipe:///tmp/snapfifo?name=Radio&sampleformat=48000:16:2&codec=flac
+      source = file:///home/user/Musik/Some%20wave%20file.wav?name=File</code>
+          <p>Available stream sources are:</p>
+          <li>pipe: read audio from a named pipe</li>
+          <li>alsa: read audio from an alsa device</li>
+          <li>librespot: launches librespot and reads audio from stdout</li>
+          <li>airplay: launches airplay and read audio from stdout</li>
+          <li>file: read PCM audio from a file</li>
+          <li>process: launches a process and reads audio from stdout</li>
+          <li>tcp: receives audio from a TCP socket, can act as client or server</li>
+          <li>meta: read and mix audio from other stream sources</li>
+          </p>
+      </section>
+      
+    <section class="main-section" id="Client">
+        <header>Client</header>
+        <p>The client will use as audio backend the system's low level audio API to have the best possible control and most precise timing to achieve perfectly synced playback.
+    
+          Available audio backends are configured using the --player command line parameter:</p>
+        <div class="grid">
+          <div><b>Backend</b></div>
+          <div><b>OS</b></div>
+          <div><b>Description</b></div>
+          <div><b>Parameters</b></div>
+          <div>alsa</div>
+          <div>Linux</div>
+          <div>ALSA</div>
+          <div><code>buffer_time=<total buffer size [ms]></code> (default 80, min 10)
+            <code>fragments=<number of buffers></code> (default 4, min 2)</div>
+          <div>pulse</div>
+          <div>Linux</div>
+            <div>PulseAudio</div>
+            <div><code>buffer_time=<buffer size [ms]></code> (default 80, min 10)</div>
+            <div>oboe</div>
+            <div>Android</div>
+            <div>Oboe, using OpenSL ES on Android 4.1 and AAudio on 8.1	</div>
+            <div></div>
+            <div>opensl</div>
+            <div>Android</div>
+            <div>OpenSL ES	</div>
+            <div></div>
+            <div>coreaudio</div>
+            <div>macOS</div>
+            <div>Core Audio</div>
+            <div></div>
+            <div>wasapi</div>
+            <div>Windows</div>
+            <div>Windows Audio Session API	</div>
+            <div></div>
+            <div>file</div>
+            <div>All</div>
+              <div>Write audio to file</div>
+              <div><code>filename=<filename></code> (<code><filename> = stdout</code>, <code>stderr</code>, <code>null</code> or a filename)
+    `mode=[w
+    </div>
+        </div>
+      </header>
+      </section>
+            <section class="main-section" id="Test">
+              <header>Test</header>
+              <p>You can test your installation by copying random data into the server's fifo file</p>
+    
+                <code>sudo cat /dev/urandom > /tmp/snapfifo</code>
+    All connected clients should play random noise now. You might raise the client's volume with "alsamixer". It's also possible to let the server play a WAV file. Simply configure a <code>file<code> stream in <code>/etc/snapserver.conf</code>, and restart the server:
+    
+    <code>[stream]
+      source = file:///home/user/Musik/Some%20wave%20file.wav?name=test</code>
+    When you are using a Raspberry Pi, you might have to change your audio output to the 3.5mm jack:
+    
+    <code>#The last number is the audio output with 1 being the 3.5 jack, 2 being HDMI and 0 being auto.
+      amixer cset numid=3 1</code>
+                To setup WiFi on a Raspberry Pi, you can follow this guide</p>
+      </section>     
+    </main>
+    </div>
+    
